@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAVAID-COLREGS | Autonomous Collision Avoidance System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/ecdis.css">
+</head>
+<body>
+
+    <!-- Header Navigation Bar -->
+    <header class="bridge-header">
+        <div class="brand-section">
+            <img src="favicon.svg" alt="NAVAID Logo" style="width: 24px; height: 24px; vertical-align: middle;">
+            <div class="brand-title">
+                NAVAID-COLREGS
+                <span class="brand-badge">ARPA C2</span>
+            </div>
+        </div>
+
+        <!-- 5 System Navigation Tabs -->
+        <nav class="nav-tabs">
+            <button class="nav-tab-btn active" data-tab="tab-radar">
+                <span>◎</span> Tactical Radar
+            </button>
+            <button class="nav-tab-btn" data-tab="tab-sensors">
+                <span>☵</span> NMEA & Sensors
+            </button>
+            <button class="nav-tab-btn" data-tab="tab-colregs">
+                <span>§</span> COLREGS Guide
+            </button>
+            <button class="nav-tab-btn" data-tab="tab-math">
+                <span>∑</span> Kinematics Math
+            </button>
+            <button class="nav-tab-btn" data-tab="tab-about">
+                <span>ℹ</span> About & Intuition
+            </button>
+        </nav>
+
+        <!-- Own Ship Telemetry Ribbon -->
+        <div class="header-telemetry-pill">
+            <div class="pill-item">
+                <span class="pill-label">Vessel</span>
+                <span class="pill-val">PACIFIC PIONEER</span>
+            </div>
+            <div class="pill-item">
+                <span class="pill-label">HDG</span>
+                <span id="tape-hdg" class="pill-val cyan">070.0°T</span>
+            </div>
+            <div class="pill-item">
+                <span class="pill-label">SOG</span>
+                <span id="tape-sog" class="pill-val cyan">16.5 kts</span>
+            </div>
+            <div class="pill-item">
+                <span class="pill-label">UTC</span>
+                <span id="tape-zulu" class="pill-val amber">09:25:40Z</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ============================================================== -->
+    <!-- TAB 1: TACTICAL ARPA & RADAR CONSOLE (Live Bridge View)       -->
+    <!-- ============================================================== -->
+    <main id="tab-radar" class="tab-view active">
+        <div class="bridge-grid">
+
+            <!-- Column 1: Streamlined ARPA Matrix Table -->
+            <section class="bridge-panel">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        <span>📊</span> Collision Risk Matrix
+                    </span>
+                    <span class="panel-meta">Safety CPA: <strong>2.0 NM</strong></span>
+                </div>
+                <div class="table-container">
+                    <table class="arpa-table">
+                        <thead>
+                            <tr>
+                                <th>Target</th>
+                                <th>Brg / Range</th>
+                                <th>CPA / TCPA</th>
+                                <th>Rule</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="encounter-tbody">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Bottom-Left Mission & Scenario Controls Launcher -->
+                <div class="mission-launcher-bar">
+                    <button id="btn-mission-toggle" class="btn-mission-popover">
+                        <span style="display: flex; align-items: center; gap: 6px;">
+                            <span>⚙</span> Mission & Simulation Controls
+                        </span>
+                        <span style="font-size: 0.65rem; color: var(--text-dim);">▲ CLICK TO OPEN</span>
+                    </button>
+
+                    <!-- Floating Popover Menu -->
+                    <div id="mission-popover" class="mission-popover-menu">
+                        <div class="popover-header">
+                            <span class="popover-title">
+                                <span>⚙</span> Simulation & Mission Controls
+                            </span>
+                            <button id="btn-popover-close" class="btn-clean" style="padding: 1px 5px; font-size: 0.7rem;">✕</button>
+                        </div>
+
+                        <div class="popover-item">
+                            <label class="popover-label">Traffic Encounter Scenario</label>
+                            <select id="select-scenario" class="select-clean" style="width: 100%;">
+                                <option value="malacca_multi" selected>Scenario: Malacca Strait Chokepoint</option>
+                                <option value="head_on_conflict">Scenario: Rule 14 Head-On Encounter</option>
+                                <option value="starboard_crossing">Scenario: Rule 15 Starboard Crossing</option>
+                                <option value="clear_sea">Scenario: Open Waters Sandbox</option>
+                            </select>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <div class="popover-item">
+                                <label class="popover-label">Simulation Clock</label>
+                                <button id="btn-sim-toggle" class="btn-clean" style="width: 100%; justify-content: center;">
+                                    ⏸ Pause Sim
+                                </button>
+                            </div>
+                            <div class="popover-item">
+                                <label class="popover-label">Speed Multiplier</label>
+                                <select id="select-sim-speed" class="select-clean" style="width: 100%;">
+                                    <option value="1.0" selected>1x Realtime</option>
+                                    <option value="2.0">2x Fast</option>
+                                    <option value="5.0">5x Accelerated</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 2px;">
+                            <button id="btn-open-add-target" class="btn-clean" style="justify-content: center;">
+                                ➕ Inject Target
+                            </button>
+                            <button id="btn-export-vdr" class="btn-clean btn-primary" style="justify-content: center;">
+                                💾 Export VDR
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Column 2: PPI Radar Viewport (360° Sweep) -->
+            <section class="bridge-panel radar-center-panel">
+                <div class="radar-subbar">
+                    <div class="radar-tools">
+                        <span style="color: var(--text-dim); font-size: 0.7rem;">Range:</span>
+                        <select id="select-range-scale" class="select-clean" style="padding: 2px 6px;">
+                            <option value="2.0">2 NM</option>
+                            <option value="4.0">4 NM</option>
+                            <option value="8.0" selected>8 NM</option>
+                            <option value="12.0">12 NM</option>
+                            <option value="16.0">16 NM</option>
+                        </select>
+                    </div>
+                    <div class="radar-tools">
+                        <button id="btn-head-up" class="btn-clean active" style="padding: 2px 7px;">Head-Up</button>
+                        <button id="btn-north-up" class="btn-clean" style="padding: 2px 7px;">North-Up</button>
+                        <span style="border-left: 1px solid var(--border-subtle); height: 14px; margin: 0 2px;"></span>
+                        <button id="btn-true-vector" class="btn-clean active" style="padding: 2px 7px;">True (12m)</button>
+                        <button id="btn-rel-vector" class="btn-clean" style="padding: 2px 7px;">Relative</button>
+                    </div>
+                </div>
+
+                <div class="radar-canvas-wrap">
+                    <canvas id="radar-canvas" width="600" height="600"></canvas>
+                </div>
+            </section>
+
+            <!-- Column 3: Decision Support & Target Inspector -->
+            <section class="bridge-panel">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        <span>⚡</span> Decision Support
+                    </span>
+                    <span class="panel-meta">IMO Rules Engine</span>
+                </div>
+                <div class="right-content">
+
+                    <!-- 1. Autonomous Recommendation Directive -->
+                    <div class="card-block">
+                        <div class="card-head">
+                            <span>Autonomous Solution</span>
+                            <span style="color: var(--accent-cyan); font-size: 0.62rem;">Safety Assessment</span>
+                        </div>
+                        <div id="recommendation-container">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <!-- 2. Trial Maneuver Simulator -->
+                    <div class="card-block">
+                        <div class="card-head">
+                            <span>Trial Maneuver Simulator</span>
+                            <button id="btn-auto-solve" class="btn-clean" style="padding: 2px 8px; font-size: 0.68rem;">
+                                Auto-Solve
+                            </button>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin: 4px 0;">
+                            <span style="color: var(--text-muted);">Candidate Helm:</span>
+                            <span id="trial-course-val" style="color: var(--accent-purple); font-family: var(--font-mono); font-weight: 600;">+0° (HDG 070.0°)</span>
+                        </div>
+                        <input id="trial-course-slider" type="range" class="trial-slider" min="-60" max="60" value="0" step="5">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--text-dim); margin-bottom: 6px;">
+                            <span>◄ -60° Port</span>
+                            <span>Center (0°)</span>
+                            <span>+60° Stbd ►</span>
+                        </div>
+                        <div id="trial-evaluation-box">
+                            <!-- Projected CPA across all targets rendered here -->
+                        </div>
+                        <button id="btn-execute-helm" class="btn-clean btn-primary" style="width: 100%; margin-top: 8px; justify-content: center; font-size: 0.76rem;">
+                            Execute Autonomous Helm Order
+                        </button>
+                    </div>
+
+                    <!-- 3. Selected Target Kinematics -->
+                    <div class="card-block" style="margin-bottom: 0;">
+                        <div class="card-head">
+                            <span>Target Kinematics</span>
+                            <span style="font-size: 0.62rem; color: var(--text-dim);">Aspect & Lights</span>
+                        </div>
+                        <div id="target-inspector-body">
+                            <div style="text-align: center; color: var(--text-dim); padding: 10px; font-size: 0.72rem;">
+                                Click any target on radar or in matrix to inspect kinematics.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- ============================================================== -->
+    <!-- TAB 2: NMEA 0183 & SENSOR TELEMETRY                          -->
+    <!-- ============================================================== -->
+    <main id="tab-sensors" class="tab-view">
+        <div class="full-tab-content">
+            <div class="doc-section">
+                <div class="doc-title">
+                    <span>☵</span> Integrated Bridge Sensor Diagnostics & NMEA 0183 Bus
+                </div>
+                <p class="doc-p">
+                    Live hardware status of shipboard navigational instruments feeding the ARPA decision engine over RS-422 serial interfaces (IEC 61162-1 / NMEA 0183).
+                </p>
+
+                <div class="doc-grid-3">
+                    <div class="doc-card">
+                        <div class="doc-card-title">
+                            <span>GNSS Receiver</span>
+                            <span class="role-badge badge-standon">RTK-FIXED</span>
+                        </div>
+                        <div style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.5;">
+                            <div>Model: Furuno GP-170 Dual Antenna</div>
+                            <div>Constellation: GPS + Galileo (14 SVs)</div>
+                            <div>HDOP: 0.75 | Position: 01°15.16'N 103°51.44'E</div>
+                            <div>Differential Mode: SBAS / WAAS Active</div>
+                        </div>
+                    </div>
+
+                    <div class="doc-card">
+                        <div class="doc-card-title">
+                            <span>Gyrocompass</span>
+                            <span class="role-badge badge-standon">ALIGNED</span>
+                        </div>
+                        <div style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.5;">
+                            <div>Model: Sperry Marine MK 37 Mod II</div>
+                            <div>True Heading: 070.0°T</div>
+                            <div>Rate of Turn (ROT): +0.18°/min</div>
+                            <div>Speed-Latitude Correction: Active</div>
+                        </div>
+                    </div>
+
+                    <div class="doc-card">
+                        <div class="doc-card-title">
+                            <span>Speed & Depth Sounder</span>
+                            <span class="role-badge badge-standon">OPERATIONAL</span>
+                        </div>
+                        <div style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.5;">
+                            <div>Doppler Dual-Axis SOG: 16.5 kts</div>
+                            <div>Speed Through Water (STW): 16.2 kts</div>
+                            <div>Depth Below Transducer: 34.2 m</div>
+                            <div>Water Temp: 28.4°C</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live NMEA Streaming Terminal -->
+                <div style="margin-top: 18px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-weight: 700; font-size: 0.8rem; color: #fff;">Live NMEA 0183 Serial RX Stream [4800 Baud / 4 Hz]</span>
+                        <span class="tech-pill">CH-87B / CH-88B VDL ACTIVE</span>
+                    </div>
+                    <div id="nmea-full-terminal" class="nmea-full-terminal">
+                        <div class="nmea-log-line rmc">$GPRMC,092540.00,A,0115.1600,N,10351.4400,E,16.5,070.0,251126,,,A*6C</div>
+                        <div class="nmea-log-line hdt">$HEHDT,070.0,T*1B</div>
+                        <div class="nmea-log-line aivdm">!AIVDM,1,1,,B,15N8i4001jP<8>0H780Q0?v00800,0*34</div>
+                        <div class="nmea-log-line">$SDDPT,34.2,0.0,100.0*4B</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ============================================================== -->
+    <!-- TAB 3: COLREGS REGULATORY REFERENCE & SCHEMATICS              -->
+    <!-- ============================================================== -->
+    <main id="tab-colregs" class="tab-view">
+        <div class="full-tab-content">
+            <div class="doc-section">
+                <div class="doc-title">
+                    <span>§</span> International Regulations for Preventing Collisions at Sea (COLREGS, 1972)
+                </div>
+                <p class="doc-p">
+                    Standard operating procedures codified by the International Maritime Organization (IMO). NAVAID-COLREGS models Rules 13 through 18 deterministically.
+                </p>
+
+                <!-- Navigation Sidelights Schematic -->
+                <div class="doc-card" style="margin-bottom: 16px;">
+                    <div class="doc-card-title">
+                        <span>SOLAS Chapter V: Navigation Sidelights Arcs of Visibility</span>
+                        <span class="tech-pill">RULE 21 & 22</span>
+                    </div>
+                    <p class="doc-p" style="margin-bottom: 8px;">
+                        Vessels display colored navigation lights across specific arcs. Identifying the visible light reveals target orientation instantly:
+                    </p>
+                    <div class="schematic-box">
+                        <svg width="480" height="200" viewBox="0 0 480 200" style="max-width: 100%;">
+                            <polygon points="240,40 270,120 255,160 225,160 210,120" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+                            <path d="M 170,100 A 90,90 0 1,1 310,100" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-dasharray="4,4"/>
+                            <text x="240" y="25" fill="#f8fafc" font-size="10" font-family="Inter" text-anchor="middle">Masthead Light (White 225° Forward)</text>
+                            <path d="M 270,120 A 70,70 0 0,1 285,175" fill="none" stroke="#10b981" stroke-width="4"/>
+                            <text x="340" y="135" fill="#10b981" font-size="10" font-family="Inter">Starboard (Green 112.5°)</text>
+                            <path d="M 210,120 A 70,70 0 0,0 195,175" fill="none" stroke="#f43f5e" stroke-width="4"/>
+                            <text x="75" y="135" fill="#f43f5e" font-size="10" font-family="Inter">Port (Red 112.5°)</text>
+                            <path d="M 195,175 A 70,70 0 0,0 285,175" fill="none" stroke="#e2e8f0" stroke-width="3" stroke-dasharray="2,2"/>
+                            <text x="240" y="190" fill="#94a3b8" font-size="10" font-family="Inter" text-anchor="middle">Sternlight (White 135° Aft)</text>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="doc-grid-3">
+                    <div class="doc-card">
+                        <div class="doc-card-title">
+                            <span>Rule 14: Head-On Situation</span>
+                            <span class="role-badge badge-giveway">BOTH GIVE-WAY</span>
+                        </div>
+                        <p class="doc-p">
+                            Two power-driven vessels meeting on reciprocal or nearly reciprocal courses (&plusmn;6&deg;) involving risk of collision.
+                        </p>
+                        <div class="math-block">
+                            Directive: Each vessel shall alter course to STARBOARD so that each shall pass on the port side of the other (Red-to-Red).
+                        </div>
+                    </div>
+
+                    <div class="doc-card">
+                        <div class="doc-card-title">
+                            <span>Rule 15: Crossing Situation</span>
+                            <span class="role-badge badge-giveway">STARBOARD = GIVE-WAY</span>
+                        </div>
+                        <p class="doc-p">
+                            Two power-driven vessels crossing. Vessel with the other on her own starboard side shall keep out of the way.
+                        </p>
+                        <div class="math-block">
+                            Directive: Give-way vessel shall make early, substantial alteration to starboard and avoid crossing ahead.
+                        </div>
+                    </div>
+
+                    <div class="doc-card">
+                        <div class="doc-card-title">
+                            <span>Rule 13: Overtaking</span>
+                            <span class="role-badge badge-giveway">OVERTAKING = GIVE-WAY</span>
+                        </div>
+                        <p class="doc-p">
+                            Coming up with another vessel from a direction more than 22.5&deg; abaft her beam (&gt;112.5&deg; relative).
+                        </p>
+                        <div class="math-block">
+                            Directive: Overtaking vessel must keep completely clear of the overtaken vessel until past and clear.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ============================================================== -->
+    <!-- TAB 4: KINEMATICS & MATHEMATICAL FORMULATION                  -->
+    <!-- ============================================================== -->
+    <main id="tab-math" class="tab-view">
+        <div class="full-tab-content">
+            <div class="doc-section">
+                <div class="doc-title">
+                    <span>∑</span> Mathematical Kinematics & Collision Geometry
+                </div>
+                <p class="doc-p">
+                    Rigorous mathematical derivations implemented in <code>colregs_math.js</code> to compute CPA, TCPA, Relative Velocity, and Bow Crossing Range.
+                </p>
+
+                <div class="doc-grid-2">
+                    <div class="doc-card">
+                        <div class="doc-card-title">1. Local Tangent Plane Projection</div>
+                        <p class="doc-p">
+                            Converts spherical geodetic coordinates (Lat, Lon) to Cartesian planar tangent coordinates (dx, dy) in Nautical Miles (NM):
+                        </p>
+                        <div class="math-block">
+                            dy = (Lat_target - Lat_own) * 60.0<br>
+                            dx = (Lon_target - Lon_own) * 60.0 * cos(Lat_mean)<br>
+                            Range = sqrt(dx^2 + dy^2)<br>
+                            Bearing = atan2(dx, dy) [deg]
+                        </div>
+                    </div>
+
+                    <div class="doc-card">
+                        <div class="doc-card-title">2. Relative Motion Vector Decomposition</div>
+                        <p class="doc-p">
+                            Decomposes SOG and COG into planar velocity vectors to solve relative closing speed:
+                        </p>
+                        <div class="math-block">
+                            V_own = [SOG_own * sin(COG), SOG_own * cos(COG)]<br>
+                            V_tgt = [SOG_tgt * sin(COG), SOG_tgt * cos(COG)]<br>
+                            V_rel = V_tgt - V_own = [v_rx, v_ry]<br>
+                            |V_rel| = sqrt(v_rx^2 + v_ry^2)
+                        </div>
+                    </div>
+
+                    <div class="doc-card">
+                        <div class="doc-card-title">3. CPA and TCPA Analytical Derivation</div>
+                        <p class="doc-p">
+                            Encounter distance squared over time t is D^2(t) = |P + t * V_rel|^2. Setting d/dt[D^2(t)] = 0 solves minimum distance:
+                        </p>
+                        <div class="math-block">
+                            TCPA = - (dx * v_rx + dy * v_ry) / |V_rel|^2 [hours]<br>
+                            P_cpa = [dx + TCPA * v_rx, dy + TCPA * v_ry]<br>
+                            CPA = sqrt(x_cpa^2 + y_cpa^2) [Nautical Miles]
+                        </div>
+                    </div>
+
+                    <div class="doc-card">
+                        <div class="doc-card-title">4. Bow Crossing Range (BCR) Intersect</div>
+                        <p class="doc-p">
+                            Determines the distance ahead or astern where the target track intersects own ship's heading ray:
+                        </p>
+                        <div class="math-block">
+                            t_bow = (dy * sin(HDG) - dx * cos(HDG)) / (v_tx * cos(HDG) - v_ty * sin(HDG))<br>
+                            BCR = Distance(Intersection) - SOG_own * t_bow
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ============================================================== -->
+    <!-- TAB 5: ABOUT & INTUITIVE MASTERCLASS (Zero Knowledge to 95%)   -->
+    <!-- ============================================================== -->
+    <main id="tab-about" class="tab-view">
+        <div class="full-tab-content">
+            <div class="doc-section">
+                <div class="doc-title">
+                    <span>ℹ</span> About NAVAID-COLREGS : Complete Intuitive Masterclass
+                </div>
+                
+                <div class="badge-group">
+                    <span class="tech-pill">IMO COLREGS 1972</span>
+                    <span class="tech-pill">IEC 62288 PRESENTATION</span>
+                    <span class="tech-pill">NMEA 0183 SERIAL BUS</span>
+                    <span class="tech-pill">WGS-84 GEODESIC MODEL</span>
+                    <span class="tech-pill">AUTONOMOUS SURFACE VESSEL (ASV) C2</span>
+                </div>
+
+                <p class="doc-p">
+                    Welcome to the masterclass guide. This section starts from <strong>absolute zero</strong> (no maritime or naval background needed) and step-by-step explains every single term, acronym, concept, and real-world implication used in this app. By the end of this page, you will understand 95% of everything real ship captains and autonomous navigation algorithms do.
+                </p>
+
+                <!-- LEVEL 0: THE FUNDAMENTAL REALITY -->
+                <div class="doc-card" style="margin-top: 14px; border-left: 3px solid var(--accent-cyan);">
+                    <span class="level-badge">LEVEL 0 &bull; THE STARTING POINT</span>
+                    <div class="doc-card-title" style="color: #fff; font-size: 1rem;">
+                        The Ship With No Brakes (Why Ocean Navigation Is Unique)
+                    </div>
+                    <div style="font-size: 0.82rem; line-height: 1.65; color: #cbd5e1; display: flex; flex-direction: column; gap: 10px;">
+                        <p>
+                            When you drive a car or ride a bicycle, if something gets in your way, you simply step on the brake pedal or squeeze the handlebar brakes, and you stop in a few feet.
+                        </p>
+                        <p>
+                            <strong>A container ship is completely different:</strong> It is a floating steel skyscraper as long as three or four football fields (over 300 meters long) weighing more than <strong>100,000 metric tons</strong>. <em>It has no brakes.</em>
+                        </p>
+                        <p>
+                            If a captain cuts the engines to zero, the ship's massive momentum keeps it coasting forward through the water for <strong>3 to 5 miles (5 to 8 kilometers)</strong> before it finally comes to a halt! Furthermore, ships cannot steer sharply—turning the massive rudder takes time, and the ship skids sideways through water like a car on ice.
+                        </p>
+                        <p>
+                            <strong>The Core Problem:</strong> In busy chokepoints like the Strait of Malacca or the English Channel, hundreds of these giant metal monsters are zooming past each other in thick fog, dark storms, and pitch-black nights. Human captains get exhausted after 12-hour watches. If two ships collide, steel tears like paper, ships sink, and millions of gallons of toxic heavy fuel oil spill into the sea.
+                        </p>
+                        <p>
+                            <strong>The Solution:</strong> This software is an <em>autonomous robotic navigator</em>. It watches the ocean with radar, calculates the future paths of all nearby ships, applies international maritime law, and steers the ship safely with zero guesswork.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- LEVEL 1: THE NAUTICAL VOCABULARY & ACRONYMS -->
+                <div class="doc-card" style="margin-top: 14px; border-left: 3px solid var(--accent-emerald);">
+                    <span class="level-badge" style="color: var(--accent-emerald); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.1);">
+                        LEVEL 1 &bull; THE NAUTICAL VOCABULARY & ACRONYMS
+                    </span>
+                    <div class="doc-card-title" style="color: #fff; font-size: 1rem;">
+                        Every Term, Acronym, and Measurement Decoded
+                    </div>
+                    
+                    <div class="doc-grid-2" style="margin-top: 10px;">
+                        <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                            <div class="glossary-term">Own Ship vs. Target</div>
+                            <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+                                <strong>Own Ship:</strong> The ship you are on and commanding (in our console: <em>M/V PACIFIC PIONEER</em>).<br>
+                                <strong>Target (or Contact):</strong> Any other ship, boat, or floating object detected by radar or radio in your vicinity.
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                            <div class="glossary-term">Port vs. Starboard</div>
+                            <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+                                Why don't sailors say "left" and "right"? Because if you turn around to face the back of the ship, your left becomes the ship's right! To prevent fatal confusion:<br>
+                                <strong>PORT:</strong> The left side of the vessel when facing forward (marked with a <span style="color:#f43f5e; font-weight:700;">RED light</span>).<br>
+                                <strong>STARBOARD:</strong> The right side of the vessel when facing forward (marked with a <span style="color:#10b981; font-weight:700;">GREEN light</span>).
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                            <div class="glossary-term">Bow, Stern & Abaft the Beam</div>
+                            <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+                                <strong>Bow:</strong> The pointy front of the ship.<br>
+                                <strong>Stern:</strong> The flat back/tail of the ship.<br>
+                                <strong>Beam:</strong> The widest point across the middle of the ship.<br>
+                                <strong>Abaft the Beam:</strong> Any direction behind the middle of the ship (an angle greater than 90° from the bow).
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                            <div class="glossary-term">NM & Knots (Nautical Measurements)</div>
+                            <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+                                <strong>NM (Nautical Mile):</strong> Equal to exactly <strong>1,852 meters (1.15 regular miles)</strong>. It is not an arbitrary number: 1 NM equals exactly 1 minute of arc (1/60th of a degree) along Earth's latitude lines!<br>
+                                <strong>Knots (kts):</strong> Speed measured in Nautical Miles per hour (1 knot = 1 NM/h &asymp; 1.852 km/h).
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                            <div class="glossary-term">HDG vs. COG (Heading vs. Course)</div>
+                            <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+                                <strong>HDG (Heading):</strong> The direction the ship's physical nose is pointing (measured by the gyrocompass).<br>
+                                <strong>COG (Course Over Ground):</strong> The actual direction the ship is sliding over the seafloor (measured by GPS). Ocean currents and wind cause the ship to "crab" sideways, so HDG and COG are often slightly different!
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                            <div class="glossary-term">SOG vs. STW (Speeds)</div>
+                            <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+                                <strong>SOG (Speed Over Ground):</strong> True satellite GPS speed relative to the Earth's surface.<br>
+                                <strong>STW (Speed Through Water):</strong> Speed relative to the surrounding water flowing past the hull (measured by the Doppler speed log).
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                            <div class="glossary-term">AIS & MMSI (Digital Ship Identity)</div>
+                            <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+                                <strong>AIS (Automatic Identification System):</strong> An autonomous VHF radio transponder mandated on all commercial ships. It continuously broadcasts the ship's name, GPS position, course, speed, and size.<br>
+                                <strong>MMSI (Maritime Mobile Service Identity):</strong> A unique 9-digit digital telephone number assigned to each ship's radio in the world.
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                            <div class="glossary-term">ARPA & VDR (Radar & Black Box)</div>
+                            <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+                                <strong>ARPA (Automatic Radar Plotting Aid):</strong> The computer software on a ship's radar that tracks blips, calculates vectors, and predicts whether ships will collide.<br>
+                                <strong>VDR (Voyage Data Recorder):</strong> The maritime equivalent of an airplane's black box. It records all sensor data, engine commands, and radar plots for maritime safety audits.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LEVEL 2: THE OCEAN TRAFFIC LAWS (COLREGS 1972) -->
+                <div class="doc-card" style="margin-top: 14px; border-left: 3px solid var(--accent-amber);">
+                    <span class="level-badge" style="color: var(--accent-amber); border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.1);">
+                        LEVEL 2 &bull; THE RULES OF THE ROAD AT SEA (COLREGS 1972)
+                    </span>
+                    <div class="doc-card-title" style="color: #fff; font-size: 1rem;">
+                        The International Laws That Prevent Ships From Crashing
+                    </div>
+                    
+                    <div style="font-size: 0.82rem; line-height: 1.65; color: #cbd5e1; display: flex; flex-direction: column; gap: 10px;">
+                        <p>
+                            In 1972, the United Nations maritime branch—the <strong>IMO (International Maritime Organization)</strong>—created the <strong>COLREGS</strong> (International Regulations for Preventing Collisions at Sea). Every captain and autonomous boat in the world must obey these rules.
+                        </p>
+                        
+                        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+                            <div style="color: #fff; font-weight: 700; font-size: 0.85rem; margin-bottom: 4px;">The Two Core Roles: Give-Way vs. Stand-On</div>
+                            <p style="margin-bottom: 6px;">
+                                In any encounter between two ships where a risk of collision exists, international law designates one ship as <strong>GIVE-WAY</strong> and the other as <strong>STAND-ON</strong>:
+                            </p>
+                            <div>
+                                <span class="role-badge badge-giveway">GIVE-WAY VESSEL:</span> Must take early, clear, and substantial action (altering course or slowing down) to stay completely out of the other ship's path. It is strictly forbidden from crossing ahead!
+                            </div>
+                            <div style="margin-top: 6px;">
+                                <span class="role-badge badge-standon">STAND-ON VESSEL:</span> Has the right-of-way, but with a catch: it <em>MUST maintain her course and speed</em>! Why? So the Give-Way ship knows exactly what to expect and can steer around safely without second-guessing.
+                            </div>
+                        </div>
+
+                        <div class="doc-grid-3" style="margin-top: 8px;">
+                            <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                                <div style="color: #fff; font-weight: 700;">Rule 14: Head-On</div>
+                                <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; line-height: 1.45;">
+                                    <strong>The Hallway Rule:</strong> When two powerboats meet nose-to-nose on opposite courses, <em>both ships are Give-Way</em>! Both must turn to their <strong>RIGHT (Starboard)</strong> so they pass each other on their left sides (Red-to-Red).
+                                </div>
+                            </div>
+
+                            <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                                <div style="color: #fff; font-weight: 700;">Rule 15: Crossing</div>
+                                <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; line-height: 1.45;">
+                                    <strong>The Intersection Rule:</strong> If another ship is crossing from your <strong>RIGHT (Starboard)</strong>, YOU must give way! Alter course to starboard to pass behind her tail. If she is crossing from your left, you are Stand-On.
+                                </div>
+                            </div>
+
+                            <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                                <div style="color: #fff; font-weight: 700;">Rule 13: Overtaking</div>
+                                <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; line-height: 1.45;">
+                                    <strong>The Slower Friend Rule:</strong> Any ship coming up on another ship from behind (more than 22.5° abaft her beam) is overtaking. The faster ship coming from behind must keep completely clear!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LEVEL 3: SECRET SHIP HEADLIGHTS & OPTICS -->
+                <div class="doc-card" style="margin-top: 14px; border-left: 3px solid var(--accent-purple);">
+                    <span class="level-badge" style="color: var(--accent-purple); border-color: rgba(192, 132, 252, 0.4); background: rgba(192, 132, 252, 0.1);">
+                        LEVEL 3 &bull; SECRET SHIP HEADLIGHTS & OPTICS
+                    </span>
+                    <div class="doc-card-title" style="color: #fff; font-size: 1rem;">
+                        How Ship Lights Work Like Floating Traffic Lights
+                    </div>
+                    <div style="font-size: 0.82rem; line-height: 1.65; color: #cbd5e1; display: flex; flex-direction: column; gap: 10px;">
+                        <p>
+                            Ships don't have headlights like cars that shine forward onto the road. Instead, under <strong>SOLAS Chapter V (Safety of Life at Sea)</strong>, ships shine special colored lights in specific <em>pie-shaped arcs</em>:
+                        </p>
+                        <div class="doc-grid-2">
+                            <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                                <div style="color: #f43f5e; font-weight: 700;">Port Sidelight (RED 112.5°)</div>
+                                <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 2px;">
+                                    Shines from dead ahead to 22.5° behind the beam on the ship's left side. If you see a ship's RED light at night: <strong>RED MEANS STOP / GIVE-WAY!</strong> That ship is on your right and has the right-of-way.
+                                </div>
+                            </div>
+
+                            <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                                <div style="color: #10b981; font-weight: 700;">Starboard Sidelight (GREEN 112.5°)</div>
+                                <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 2px;">
+                                    Shines from dead ahead to 22.5° behind the beam on the ship's right side. If you see a ship's GREEN light at night: <strong>GREEN MEANS GO / STAND-ON!</strong> You have the right-of-way; maintain course and speed.
+                                </div>
+                            </div>
+                        </div>
+                        <p>
+                            <strong>Target Aspect Angle (&alpha;):</strong> This is the angle from the other ship's bow pointing toward you. Our algorithm calculates this angle to instantly know which light is shining toward our bridge, allowing the computer to make legal right-of-way decisions without human intervention.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- LEVEL 4: THE MATH OF NOT CRASHING -->
+                <div class="doc-card" style="margin-top: 14px; border-left: 3px solid var(--accent-crimson);">
+                    <span class="level-badge" style="color: var(--accent-crimson); border-color: rgba(244, 63, 94, 0.4); background: rgba(244, 63, 94, 0.1);">
+                        LEVEL 4 &bull; THE MATHEMATICS OF NOT CRASHING
+                    </span>
+                    <div class="doc-card-title" style="color: #fff; font-size: 1rem;">
+                        CPA, TCPA, Relative Velocity & Bow Crossing Range
+                    </div>
+                    <div style="font-size: 0.82rem; line-height: 1.65; color: #cbd5e1; display: flex; flex-direction: column; gap: 10px;">
+                        <p>
+                            How does the computer look into the future? It uses geometric vector algebra:
+                        </p>
+                        
+                        <div class="doc-grid-2">
+                            <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                                <div style="color: #fff; font-weight: 700;">CPA (Closest Point of Approach)</div>
+                                <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+                                    <strong>The Question:</strong> <em>"If both ships hold their current course and speed, what is the absolute closest distance our hulls will get?"</em><br>
+                                    If CPA = 0 NM, the ships will collide! Our system enforces a safety threshold of <strong>CPA &ge; 2.0 Nautical Miles</strong>. Any target with CPA &lt; 2.0 NM turns bright red as a critical threat.
+                                </div>
+                            </div>
+
+                            <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                                <div style="color: #fff; font-weight: 700;">TCPA (Time to Closest Point of Approach)</div>
+                                <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+                                    <strong>The Question:</strong> <em>"How many minutes from right now will that closest pass occur?"</em><br>
+                                    It is an urgent countdown timer. If TCPA = 12 minutes, the bridge crew has 12 minutes to evaluate, communicate, and steer clear before the danger point.
+                                </div>
+                            </div>
+
+                            <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                                <div style="color: #fff; font-weight: 700;">Relative Velocity Vector (V_rel)</div>
+                                <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+                                    When you drive a car on a highway, oncoming cars seem to fly toward you at 120 mph because both speeds add together. Relative velocity vector (V_rel = V_target - V_own) subtracts your own movement so the radar can calculate how fast the other ship is closing in relative to you.
+                                </div>
+                            </div>
+
+                            <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
+                                <div style="color: #fff; font-weight: 700;">BCR (Bow Crossing Range)</div>
+                                <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+                                    <strong>The Question:</strong> <em>"Will the other ship pass in front of my nose (ahead) or behind my tail (astern)?"</em><br>
+                                    A positive BCR (e.g. +3.5 NM) means they cross ahead. A negative BCR (e.g. -2.1 NM) means they pass safely behind our stern. COLREGS forbids crossing ahead when giving way!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LEVEL 5: THE AUTONOMOUS WHAT-IF MACHINE -->
+                <div class="doc-card" style="margin-top: 14px; border-left: 3px solid var(--accent-cyan);">
+                    <span class="level-badge">LEVEL 5 &bull; THE AUTONOMOUS WHAT-IF MACHINE</span>
+                    <div class="doc-card-title" style="color: #fff; font-size: 1rem;">
+                        How Autonomous Ships Steer Safely Into the Future
+                    </div>
+                    <div style="font-size: 0.82rem; line-height: 1.65; color: #cbd5e1; display: flex; flex-direction: column; gap: 10px;">
+                        <p>
+                            Look at the <strong>Trial Maneuver Simulator</strong> on the right side of the radar screen:
+                        </p>
+                        <p>
+                            In dense maritime traffic, turning your steering wheel blindly is dangerous: turning right to avoid Ship A might accidentally steer you right into the path of Ship B!
+                        </p>
+                        <p>
+                            <strong>How the Algorithm Solves It:</strong>
+                            <br>1. When a collision risk is detected, the algorithm tests candidate course deviations (+15°, +25°, +35°, +45°, +60° to Starboard).
+                            <br>2. For every single trial angle, the computer projects the future paths against <strong>every ship in the ocean simultaneously</strong>.
+                            <br>3. It picks the smallest course change that guarantees a minimum CPA of at least 2.0 NM across 100% of all traffic.
+                            <br>4. The human captain (or the autonomous autopilot) clicks <strong>"Execute Autonomous Helm Order"</strong>, and the vessel safely turns onto the optimal collision-free track.
+                        </p>
+                        <p style="border-top: 1px solid var(--border-subtle); padding-top: 10px; margin-top: 4px;">
+                            <strong>Congratulations!</strong> You now understand 95% of how international maritime navigation, radar ARPA kinematics, and autonomous ship collision avoidance work in the real world.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════
+                     COMMON QUERIES ACCORDION
+                ═══════════════════════════════════════════════════════ -->
+                <div style="margin-top: 24px;">
+                    <div style="font-size:0.95rem; font-weight:700; color:#fff; margin-bottom:4px; display:flex; align-items:center; gap:8px; letter-spacing:0.04em;">
+                        <span style="color:var(--accent-cyan); font-size:1.1rem;">?</span> Common Queries
+                    </div>
+                    <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:14px; line-height:1.6;">
+                        Click any question to expand a full multi-level explanation — from child-friendly basics to advanced technical depth. Each question builds progressively: start at Stage 1, go as far as you need.
+                    </p>
+
+                    <!-- Q1: NAVAID-COLREGS -->
+                    <details class="query-details">
+                        <summary class="query-summary">What is the meaning of NAVAID-COLREGS?</summary>
+                        <div class="query-content">
+                            <div class="stage-block">
+                                <div class="stage-title" style="color:var(--accent-cyan);">Stage 1 — The Simple Meaning</div>
+                                <div class="stage-text">
+                                    Think of NAVAID like a helpful road sign for ships. <strong>NAVAID</strong> stands for <em>Navigational Aid</em> — anything that helps a sailor know where they are and how to safely get somewhere. <strong>COLREGS</strong> stands for <em>COLlision REGulationS</em> — the rulebook that all ships in the world must follow so they never crash into each other. Put them together: NAVAID-COLREGS is a smart computer system that acts as both a navigational helper AND a collision rule enforcer for ships at sea.
+                                </div>
+                            </div>
+                            <div class="stage-block stage-green">
+                                <div class="stage-title" style="color:var(--accent-emerald);">Stage 2 — The Maritime Context</div>
+                                <div class="stage-text">
+                                    <strong>NAVAID (Navigational Aid):</strong> In international maritime law, a NAVAID is any device, marker, or system helping a vessel navigate safely. Traditional NAVAIDs include lighthouses, buoys, and foghorns. Modern electronic NAVAIDs include GPS receivers, marine radar, gyrocompasses, and AIS transponders.<br><br>
+                                    <strong>COLREGS:</strong> Short for the <em>International Regulations for Preventing Collisions at Sea (1972)</em>, adopted by the International Maritime Organization (IMO). They define legal right-of-way rules for every type of ship encounter: head-on meetings, crossing situations, and overtaking — Rules 1 through 38.<br><br>
+                                    Combined: <strong>NAVAID-COLREGS</strong> is an autonomous software system that fuses real-time AIS and radar position data with the full COLREGS legal rulebook to advise — or directly command — a ship's helm.
+                                </div>
+                            </div>
+                            <div class="stage-block stage-purple">
+                                <div class="stage-title" style="color:var(--accent-purple);">Stage 3 — Advanced Technical Definition</div>
+                                <div class="stage-text">
+                                    At the engineering level, NAVAID-COLREGS is an <strong>Autonomous Surface Vessel (ASV) Command &amp; Control (C2) decision engine</strong> that:<br>
+                                    1. Ingests real-time AIS NMEA 0183 / NMEA 2000 position reports (ITU-R M.1371 standard, 9.6 kbps on VHF channels 87B/88B).<br>
+                                    2. Projects vessel kinematics on a local WGS-84 tangent plane using geodesic dead-reckoning.<br>
+                                    3. Applies deterministic binary decision trees for IMO COLREGS Rules 13 (Overtaking), 14 (Head-On), 15 (Crossing), 16 (Give-Way), 17 (Stand-On), and 18 (Vessel Hierarchy — NUC, RAM, CBD).<br>
+                                    4. Solves a constrained discrete optimization over candidate helm alterations to find the minimum-deviation COLREGS-compliant avoidance maneuver across all simultaneous traffic contacts.
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Q2: ARPA C2 -->
+                    <details class="query-details">
+                        <summary class="query-summary">What is ARPA C2?</summary>
+                        <div class="query-content">
+                            <div class="stage-block">
+                                <div class="stage-title" style="color:var(--accent-cyan);">Stage 1 — What is Radar and ARPA?</div>
+                                <div class="stage-text">
+                                    Imagine you are in a foggy field and you spin around shouting "ECHO!" — the sound bounces off nearby trees and comes back to you. That is exactly how radar works, but with radio waves instead of sound. Ships send out invisible radio pulses; when those pulses hit another ship, they bounce back. The radar measures how long the round-trip took, so it knows exactly how far away that ship is.<br><br>
+                                    <strong>ARPA (Automatic Radar Plotting Aid)</strong> is the smart computer attached to the radar that tracks automatically. Instead of a human drawing lines on a paper chart every few minutes, ARPA watches every blip on the radar screen and silently calculates: "That ship is moving at 14 knots, heading 048°T, and will pass 1.2 miles ahead in 9 minutes."
+                                </div>
+                            </div>
+                            <div class="stage-block stage-green">
+                                <div class="stage-title" style="color:var(--accent-emerald);">Stage 2 — What Does C2 Add?</div>
+                                <div class="stage-text">
+                                    <strong>C2 stands for Command and Control</strong> — a naval term for the full chain of detecting a situation, making a decision, and issuing orders to fix it.<br><br>
+                                    An ARPA system alone only <em>observes and reports</em>: "Target 3 has CPA 0.4 NM in 7 min." A human must then decide what to do.<br><br>
+                                    <strong>ARPA C2</strong> goes one step further: it adds an autonomous decision engine that evaluates all COLREGS rules, computes the legally correct maneuver, and can directly command the vessel's helm (autopilot) or display the precise order on the bridge. It closes the full <em>Observe → Orient → Decide → Act (OODA)</em> loop without requiring a fatigued human in the chain.
+                                </div>
+                            </div>
+                            <div class="stage-block stage-purple">
+                                <div class="stage-title" style="color:var(--accent-purple);">Stage 3 — Technical Standards</div>
+                                <div class="stage-text">
+                                    ARPA displays are mandated by IMO Resolution MSC.192(79) and must meet presentation standards defined by <strong>IEC 62288</strong>. Requirements include:<br>
+                                    • Target symbols: Unfilled diamond for tracked AIS targets; triangle outline for activated dangerous targets (CPA alarm).<br>
+                                    • True motion vectors displayed as straight lines from target centers proportional to predicted future position at a selectable time (typically 3–12 min).<br>
+                                    • CPA/TCPA alarm zones: User-configurable guard rings (default 2.0 NM / 15.0 min on most commercial systems).<br>
+                                    • The <strong>C2</strong> extension adds IEC 62940 (Integrated Bridge Systems) interconnects, feeding helm-order outputs via NMEA 0183 proprietary sentences or CAN-bus (NMEA 2000 / IEC 61162-3) to the vessel's ECDIS and autopilot.
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Q3: NMEA -->
+                    <details class="query-details">
+                        <summary class="query-summary">What is the meaning of NMEA?</summary>
+                        <div class="query-content">
+                            <div class="stage-block">
+                                <div class="stage-title" style="color:var(--accent-cyan);">Stage 1 — A Universal Language for Instruments</div>
+                                <div class="stage-text">
+                                    Imagine all the instruments on a ship's bridge — the GPS, the speed log, the depth sounder, the compass, the radar — are like people from different countries speaking different languages. They each know something important, but they cannot talk to each other! <strong>NMEA</strong> was created to give every instrument on a ship a single common language so that any device can read messages from any other device.
+                                </div>
+                            </div>
+                            <div class="stage-block stage-green">
+                                <div class="stage-title" style="color:var(--accent-emerald);">Stage 2 — The Organization and Standard</div>
+                                <div class="stage-text">
+                                    <strong>NMEA</strong> stands for <strong>National Marine Electronics Association</strong> — a US trade organization founded in 1957 that writes the technical communication standards for all marine electronic equipment.<br><br>
+                                    <strong>NMEA 0183</strong> is a serial protocol running at 4800 bits per second over RS-422 twisted-pair wires. Every message is a plain-text "sentence" starting with <code>$</code>, a 5-letter talker and sentence identifier, comma-separated data fields, and a 2-digit hex checksum after <code>*</code>.<br><br>
+                                    Examples used in this system:<br>
+                                    <code>$GPRMC</code> — GPS Recommended Minimum (position, speed, course, date)<br>
+                                    <code>$HEHDT</code> — Heading True from gyrocompass<br>
+                                    <code>!AIVDM</code> — AIS radio message received over VHF<br>
+                                    <code>$SDDPT</code> — Depth from echo sounder
+                                </div>
+                            </div>
+                            <div class="stage-block stage-purple">
+                                <div class="stage-title" style="color:var(--accent-purple);">Stage 3 — Sentence Anatomy &amp; Checksum</div>
+                                <div class="stage-text">
+                                    Full decode of a real GPRMC sentence from this app:<br>
+                                    <div class="math-block">$GPRMC,091530.00,A,0115.1600,N,10351.4400,E,16.5,070.0,251126,,,A*6C</div>
+                                    Field by field:<br>
+                                    <code>$GPRMC</code> — Talker GP (GPS), Sentence RMC<br>
+                                    <code>091530.00</code> — UTC Time: 09:15:30.00<br>
+                                    <code>A</code> — Status: A = Active (valid fix)<br>
+                                    <code>0115.1600,N</code> — Latitude 01°15.1600'N<br>
+                                    <code>10351.4400,E</code> — Longitude 103°51.4400'E<br>
+                                    <code>16.5</code> — Speed over ground: 16.5 knots<br>
+                                    <code>070.0</code> — Course over ground: 070.0°T<br>
+                                    <code>251126</code> — Date: 25 November 2026<br>
+                                    <code>*6C</code> — XOR checksum of all bytes between $ and * equals 0x6C<br><br>
+                                    NMEA 2000 (the successor) uses CAN-bus at 250 kbps with binary-encoded Parameter Group Numbers (PGNs) instead of ASCII text.
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Q4: GNSS Receiver -->
+                    <details class="query-details">
+                        <summary class="query-summary">What is a GNSS Receiver?</summary>
+                        <div class="query-content">
+                            <div class="stage-block">
+                                <div class="stage-title" style="color:var(--accent-cyan);">Stage 1 — Satellites Playing Hot-and-Cold</div>
+                                <div class="stage-text">
+                                    You know the game "Hot and Cold" — where someone tells you if you're getting closer to a hidden object? Satellites play that game with your phone or ship, except instead of saying "hot" or "cold," each satellite tells you exactly how far away it is. If four satellites all tell you their distance at once, the ship's computer can triangulate — do the math — and pinpoint exactly where on Earth you are, to within a few meters.
+                                </div>
+                            </div>
+                            <div class="stage-block stage-green">
+                                <div class="stage-title" style="color:var(--accent-emerald);">Stage 2 — GNSS Constellations</div>
+                                <div class="stage-text">
+                                    <strong>GNSS</strong> stands for <strong>Global Navigation Satellite System</strong> — the umbrella term for all satellite positioning networks. GPS is just one of several constellations:<br><br>
+                                    • <strong>GPS</strong> (USA) — 31 operational satellites<br>
+                                    • <strong>GLONASS</strong> (Russia) — 24 satellites<br>
+                                    • <strong>Galileo</strong> (European Union) — 30 satellites<br>
+                                    • <strong>BeiDou</strong> (China) — 35 satellites<br><br>
+                                    A modern marine GNSS receiver can receive signals from multiple constellations simultaneously, tracking 14+ satellites at once. More satellites = better geometry = more precise position fix.
+                                </div>
+                            </div>
+                            <div class="stage-block stage-purple">
+                                <div class="stage-title" style="color:var(--accent-purple);">Stage 3 — RTK, HDOP, and Differential Corrections</div>
+                                <div class="stage-text">
+                                    Standard GNSS gives accuracy of about 3–5 meters. For precise vessel navigation, the system uses:<br><br>
+                                    <strong>RTK (Real-Time Kinematic):</strong> A ground-based reference station whose exact position is known broadcasts correction signals. The ship's receiver computes the difference between the satellite signal and the known ground truth, correcting atmospheric delays in real-time — achieving accuracy down to 2 cm.<br><br>
+                                    <strong>HDOP (Horizontal Dilution of Precision):</strong> A unitless quality factor describing the geometric spread of satellites across the sky. HDOP = 0.75 (displayed in our Sensor tab) means the satellite geometry is excellent. HDOP &gt; 2.0 is poor; HDOP &lt; 1.0 is ideal.<br><br>
+                                    <strong>SBAS/WAAS:</strong> Space-Based/Wide Area Augmentation System — a network of ground stations that uplinks ionospheric correction data to geostationary satellites, which broadcast it to all GNSS receivers in range, providing 1–3 m accuracy without a local base station.
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Q5: Kinematics & Collision Geometry -->
+                    <details class="query-details">
+                        <summary class="query-summary">In-depth: Mathematical Kinematics &amp; Collision Geometry</summary>
+                        <div class="query-content">
+                            <div class="stage-block">
+                                <div class="stage-title" style="color:var(--accent-cyan);">Stage 1 — What Does "Kinematics" Mean?</div>
+                                <div class="stage-text">
+                                    Kinematics is the study of motion — where things are, how fast they move, and where they will be in the future — without worrying about <em>why</em> they are moving. For ships, kinematics answers: "If Ship A is here going that way, and Ship B is there going another way, will they ever be in the same place at the same time?" That is the entire science of collision prediction.
+                                </div>
+                            </div>
+                            <div class="stage-block stage-green">
+                                <div class="stage-title" style="color:var(--accent-emerald);">Stage 2 — Vectors, CPA, and TCPA Visualized</div>
+                                <div class="stage-text" style="margin-bottom:8px;">
+                                    Every ship has a <strong>position</strong> (where it is on the map) and a <strong>velocity vector</strong> (an arrow showing direction and speed). The computer draws these vectors forward in time and asks: do these paths ever get dangerously close?
+                                </div>
+                                <div class="schematic-box" style="background:#020810; padding:12px; border-radius:6px; margin-bottom:10px;">
+                                    <svg viewBox="0 0 500 280" style="width:100%; max-width:580px; display:block;">
+                                        <defs>
+                                            <marker id="arr-c" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#00d2ff"/></marker>
+                                            <marker id="arr-r" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f43f5e"/></marker>
+                                            <marker id="arr-a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f59e0b"/></marker>
+                                        </defs>
+                                        <rect width="500" height="280" fill="#040810" rx="6"/>
+                                        <g stroke="rgba(255,255,255,0.05)" stroke-width="0.8">
+                                            <line x1="0" y1="70" x2="500" y2="70"/><line x1="0" y1="140" x2="500" y2="140"/><line x1="0" y1="210" x2="500" y2="210"/>
+                                            <line x1="125" y1="0" x2="125" y2="280"/><line x1="250" y1="0" x2="250" y2="280"/><line x1="375" y1="0" x2="375" y2="280"/>
+                                        </g>
+                                        <polygon points="80,220 92,250 86,258 74,258 68,250" fill="#00d2ff" stroke="#fff" stroke-width="1.2"/>
+                                        <text x="54" y="270" fill="#00d2ff" font-size="11" font-weight="700" font-family="Inter,sans-serif">Own Ship</text>
+                                        <line x1="80" y1="220" x2="310" y2="90" stroke="#00d2ff" stroke-width="2.5" marker-end="url(#arr-c)"/>
+                                        <text x="165" y="142" fill="#00d2ff" font-size="10" font-family="Inter,sans-serif" transform="rotate(-28,165,142)">V_own · 16.5 kts / 070°T</text>
+                                        <polygon points="420,80 432,110 426,118 414,118 408,110" fill="#f43f5e" stroke="#fff" stroke-width="1.2"/>
+                                        <text x="406" y="132" fill="#f43f5e" font-size="11" font-weight="700" font-family="Inter,sans-serif">Target</text>
+                                        <line x1="420" y1="80" x2="195" y2="210" stroke="#f43f5e" stroke-width="2.5" marker-end="url(#arr-r)"/>
+                                        <text x="336" y="128" fill="#f43f5e" font-size="10" font-family="Inter,sans-serif" transform="rotate(30,336,128)">V_target · 18 kts / 248°T</text>
+                                        <circle cx="275" cy="168" r="10" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,2"/>
+                                        <circle cx="275" cy="168" r="3" fill="#f59e0b"/>
+                                        <text x="284" y="162" fill="#f59e0b" font-size="11" font-weight="700" font-family="Inter,sans-serif">CPA</text>
+                                        <line x1="260" y1="130" x2="275" y2="168" stroke="rgba(245,158,11,0.5)" stroke-width="1.5" stroke-dasharray="3,3"/>
+                                        <text x="224" y="150" fill="#f59e0b" font-size="10" font-family="Inter,sans-serif">1.2 NM</text>
+                                        <line x1="80" y1="262" x2="273" y2="262" stroke="rgba(255,255,255,0.3)" stroke-width="1" marker-end="url(#arr-a)"/>
+                                        <text x="142" y="276" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">TCPA = 8.4 min</text>
+                                        <rect x="10" y="8" width="12" height="4" fill="#00d2ff"/><text x="26" y="16" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Own Ship Vector</text>
+                                        <rect x="10" y="24" width="12" height="4" fill="#f43f5e"/><text x="26" y="32" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Target Vector</text>
+                                        <circle cx="16" cy="44" r="4" fill="none" stroke="#f59e0b" stroke-width="1.5"/><text x="26" y="48" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">CPA — Closest Point of Approach</text>
+                                    </svg>
+                                </div>
+                                <div class="stage-text">
+                                    Both ships travel in straight lines (vectors). The closest they ever get is marked by the orange circle — the <strong>CPA (Closest Point of Approach)</strong>. The time from "now" to that moment is the <strong>TCPA (Time to CPA)</strong>.
+                                </div>
+                            </div>
+                            <div class="stage-block stage-amber">
+                                <div class="stage-title" style="color:var(--accent-amber);">Stage 3 — Relative Motion Diagram</div>
+                                <div class="stage-text" style="margin-bottom:8px;">
+                                    Easier method: freeze Own Ship and let the target move with the <strong>relative velocity</strong> (V_rel = V_target − V_own). The closest the target ever gets to the frozen own ship is the CPA.
+                                </div>
+                                <div class="schematic-box" style="background:#020810; padding:12px; border-radius:6px; margin-bottom:10px;">
+                                    <svg viewBox="0 0 400 240" style="width:100%; max-width:480px; display:block;">
+                                        <defs>
+                                            <marker id="arr-r2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f43f5e"/></marker>
+                                        </defs>
+                                        <rect width="400" height="240" fill="#040810" rx="6"/>
+                                        <circle cx="200" cy="140" r="18" fill="none" stroke="rgba(0,210,255,0.3)" stroke-width="1.5" stroke-dasharray="4,4"/>
+                                        <polygon points="200,122 210,148 206,154 194,154 190,148" fill="#00d2ff" stroke="#fff" stroke-width="1.2"/>
+                                        <text x="172" y="170" fill="#00d2ff" font-size="11" font-weight="700" font-family="Inter,sans-serif">Own Ship (Fixed)</text>
+                                        <circle cx="60" cy="60" r="6" fill="#f43f5e"/>
+                                        <text x="40" y="52" fill="#f43f5e" font-size="11" font-family="Inter,sans-serif">T&#8320;</text>
+                                        <line x1="60" y1="60" x2="340" y2="168" stroke="#f43f5e" stroke-width="2" marker-end="url(#arr-r2)"/>
+                                        <text x="168" y="84" fill="#f43f5e" font-size="11" font-family="Inter,sans-serif" transform="rotate(21,168,84)">V_rel path of Target</text>
+                                        <circle cx="210" cy="122" r="7" fill="none" stroke="#f59e0b" stroke-width="2"/>
+                                        <circle cx="210" cy="122" r="3" fill="#f59e0b"/>
+                                        <line x1="200" y1="140" x2="210" y2="122" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,2"/>
+                                        <text x="215" y="118" fill="#f59e0b" font-size="11" font-weight="700" font-family="Inter,sans-serif">CPA</text>
+                                        <text x="184" y="135" fill="#f59e0b" font-size="10" font-family="Inter,sans-serif">d_min</text>
+                                        <rect x="202" y="124" width="6" height="6" fill="none" stroke="#f59e0b" stroke-width="1.2"/>
+                                    </svg>
+                                </div>
+                                <div class="stage-text">
+                                    The CPA is the perpendicular distance from the fixed own-ship to the target's relative-motion track line. If that distance is less than 2.0 NM, the system raises a collision alarm.
+                                </div>
+                            </div>
+                            <div class="stage-block stage-purple">
+                                <div class="stage-title" style="color:var(--accent-purple);">Stage 4 — The Exact Mathematics</div>
+                                <div class="stage-text">
+                                    <strong>Step 1 — Convert Lat/Lon to flat-plane Cartesian NM</strong> (Local Tangent Plane approximation, valid &lt;50 NM):
+                                    <div class="math-block">dx = (Lon_target − Lon_own) × 60 × cos(Lat_mean)  [NM East]
+dy = (Lat_target − Lat_own) × 60                   [NM North]
+Range = √(dx² + dy²)                               [NM]</div>
+                                    <strong>Step 2 — Decompose velocities into East/North components:</strong>
+                                    <div class="math-block">V_own = (SOG_own × sin(COG_own),  SOG_own × cos(COG_own))
+V_tgt = (SOG_tgt × sin(COG_tgt),  SOG_tgt × cos(COG_tgt))
+V_rel = V_tgt − V_own  =  (v_rx, v_ry)</div>
+                                    <strong>Step 3 — Minimize future squared distance and solve for TCPA:</strong>
+                                    <div class="math-block">D²(t) = (dx + t·v_rx)² + (dy + t·v_ry)²
+
+Differentiate, set dD²/dt = 0:
+
+TCPA = −(dx·v_rx + dy·v_ry) / (v_rx² + v_ry²)   [hours]
+
+If TCPA > 0 (vessels still converging):
+  P_cpa = (dx + TCPA·v_rx,  dy + TCPA·v_ry)
+  CPA   = √(x_cpa² + y_cpa²)                     [NM]
+
+If TCPA ≤ 0 → vessels already diverging.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Q6: IEC 62288 -->
+                    <details class="query-details">
+                        <summary class="query-summary">What is IEC 62288 — and what is IEC?</summary>
+                        <div class="query-content">
+                            <div class="stage-block">
+                                <div class="stage-title" style="color:var(--accent-cyan);">Stage 1 — What is a Technical Standard?</div>
+                                <div class="stage-text">
+                                    Imagine you are building a traffic light. Without any rules, one city might make green mean "stop" and red mean "go" — total chaos! Standards are agreed-upon rules that say: "Green ALWAYS means go, red ALWAYS means stop, worldwide, no exceptions." Technical organizations write these rules so that engineers in Japan and engineers in Germany can build equipment that works perfectly together.
+                                </div>
+                            </div>
+                            <div class="stage-block stage-green">
+                                <div class="stage-title" style="color:var(--accent-emerald);">Stage 2 — What is IEC?</div>
+                                <div class="stage-text">
+                                    <strong>IEC</strong> stands for the <strong>International Electrotechnical Commission</strong> — a non-profit global standards organization founded in 1906, headquartered in Geneva, Switzerland. It is the world's leading authority on standards for electrical, electronic, and related technologies. Over 170 countries are members.<br><br>
+                                    IEC works alongside <strong>ISO (International Organization for Standardization)</strong>: ISO handles mechanical, chemical, and business standards; IEC handles all electrical and electronic standards. For marine electronics specifically, IEC publishes the entire <strong>IEC 62000-series</strong> of maritime navigation and radio-communication equipment standards.
+                                </div>
+                            </div>
+                            <div class="stage-block stage-purple">
+                                <div class="stage-title" style="color:var(--accent-purple);">Stage 3 — IEC 62288 Specifically</div>
+                                <div class="stage-text">
+                                    <strong>IEC 62288: "Maritime Navigation and Radiocommunication Equipment and Systems — Presentation of Navigation-Related Information on Shipborne Navigational Displays — General Requirements, Methods of Testing and Required Test Results."</strong><br><br>
+                                    In plain language: this standard defines every detail of how information must be visually displayed on a ship's bridge screens — radar, ECDIS, ARPA — so that an officer of the watch on any ship in the world sees the same standardized symbology, colors, and layout:<br><br>
+                                    • <strong>Colors:</strong> Dangerous/activated targets = triangle outline (crimson). Safe targets = diamond outline. Own ship = filled vessel shape.<br>
+                                    • <strong>Vectors:</strong> True motion vectors as straight lines from symbol centers, length proportional to predicted speed over configurable time (3–12 min).<br>
+                                    • <strong>Alarms:</strong> CPA/TCPA alarm zones must be user-configurable, visually distinct, and audible.<br>
+                                    • <strong>Display Modes:</strong> Head-Up (vessel heading pointing to screen top), North-Up (chart North pointing up), True Motion (own ship moves across fixed chart).<br><br>
+                                    This app's color palette — cyan for own ship, emerald for safe targets, crimson for dangerous targets, amber for caution — is derived directly from IEC 62288 presentation guidelines.
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Q7: WGS -->
+                    <details class="query-details">
+                        <summary class="query-summary">What is WGS (and WGS-84)?</summary>
+                        <div class="query-content">
+                            <div class="stage-block">
+                                <div class="stage-title" style="color:var(--accent-cyan);">Stage 1 — Earth Is Not a Perfect Sphere</div>
+                                <div class="stage-text">
+                                    Here is a surprising fact: Earth is not a perfect round ball — it is slightly squashed at the poles and bulging at the equator, like a spinning top. This means if you try to draw a flat map of the Earth, you need to decide what exact "shape of the Earth" you are using as your starting model. If two people use slightly different models, their GPS coordinates will not match — a ship's GPS says one position, a paper chart shows another. Disaster!
+                                </div>
+                            </div>
+                            <div class="stage-block stage-green">
+                                <div class="stage-title" style="color:var(--accent-emerald);">Stage 2 — WGS Defined</div>
+                                <div class="stage-text">
+                                    <strong>WGS</strong> stands for <strong>World Geodetic System</strong> — a standardized mathematical model of Earth's shape and gravitational field created by the <strong>US National Geospatial-Intelligence Agency (NGA)</strong>.<br><br>
+                                    <strong>WGS-84</strong> (the 1984 edition, still in use today) defines Earth as a reference ellipsoid with these precise parameters:<br>
+                                    • Semi-major axis (equatorial radius): <strong>a = 6,378,137.0 m</strong><br>
+                                    • Semi-minor axis (polar radius): <strong>b = 6,356,752.314 m</strong><br>
+                                    • Flattening: f = (a−b)/a = 1/298.257223563<br><br>
+                                    This means Earth is 21.4 km wider at the equator than from pole to pole.
+                                </div>
+                            </div>
+                            <div class="stage-block stage-purple">
+                                <div class="stage-title" style="color:var(--accent-purple);">Stage 3 — Why It Matters for Navigation</div>
+                                <div class="stage-text">
+                                    Every GPS satellite broadcasts its position in WGS-84 coordinates. Every GNSS receiver on every ship, airplane, car, and phone on Earth computes its position in WGS-84. Every digital nautical chart (ECDIS S-57/S-101 format) is georeferenced to WGS-84. This universal adoption means a position from a Japanese GPS chip matches perfectly with a German chart plotter.<br><br>
+                                    In this application's kinematics engine, positions (Lat, Lon) are expressed in WGS-84 decimal degrees. The Local Tangent Plane projection converts them to flat Cartesian NM using the WGS-84 ellipsoid's local radius at the mean latitude, ensuring geometrically accurate CPA/TCPA results even at high latitudes where longitude degrees shrink in physical length:
+                                    <div class="math-block">dx = ΔLon × 60 × cos(Lat_mean_WGS84)   [NM East/West]
+dy = ΔLat × 60                           [NM North/South]
+
+cos(Lat_mean) corrects for WGS-84 ellipsoid's
+converging meridians toward the poles.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                </div><!-- end Common Queries -->
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Inject AIS Target Form -->
+    <div id="modal-add-target" class="modal-backdrop">
+        <div class="modal-dialog">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <span style="font-weight: 700; font-size: 0.92rem; color: #fff;">Add Custom AIS Target</span>
+                <button id="btn-close-add-target" class="btn-clean" style="padding: 2px 6px;">✕</button>
+            </div>
+            <form id="form-add-target" style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                    <label style="color: var(--text-muted); display: block; font-size: 0.7rem; margin-bottom: 4px;">Vessel Name</label>
+                    <input id="input-tgt-name" class="select-clean" style="width: 100%;" value="M/V SEA TRADER" required>
+                </div>
+                <div>
+                    <label style="color: var(--text-muted); display: block; font-size: 0.7rem; margin-bottom: 4px;">Ship Type</label>
+                    <select id="input-tgt-type" class="select-clean" style="width: 100%;">
+                        <option value="Container Ship">Container Ship</option>
+                        <option value="Crude Oil Tanker">Crude Oil Tanker</option>
+                        <option value="Bulk Carrier">Bulk Carrier</option>
+                        <option value="Ro-Pax Ferry">High-Speed Ro-Pax Ferry</option>
+                        <option value="Tug & Tow">Tug & Tow (RAM)</option>
+                    </select>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <label style="color: var(--text-muted); display: block; font-size: 0.7rem; margin-bottom: 4px;">Bearing from Own (°T)</label>
+                        <input id="input-tgt-brg" type="number" class="select-clean" style="width: 100%;" min="0" max="359" value="045" required>
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted); display: block; font-size: 0.7rem; margin-bottom: 4px;">Range (NM)</label>
+                        <input id="input-tgt-range" type="number" class="select-clean" style="width: 100%;" min="0.5" max="15.0" step="0.5" value="5.0" required>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <label style="color: var(--text-muted); display: block; font-size: 0.7rem; margin-bottom: 4px;">Course (°T)</label>
+                        <input id="input-tgt-cog" type="number" class="select-clean" style="width: 100%;" min="0" max="359" value="230" required>
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted); display: block; font-size: 0.7rem; margin-bottom: 4px;">Speed (kts)</label>
+                        <input id="input-tgt-sog" type="number" class="select-clean" style="width: 100%;" min="1" max="30" step="0.5" value="15.0" required>
+                    </div>
+                </div>
+                <div style="margin-top: 8px;">
+                    <button type="submit" class="btn-clean btn-primary" style="width: 100%; justify-content: center;">Spawn Target</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/colregs_math.js"></script>
+    <script src="js/colregs_rules.js"></script>
+    <script src="js/radar_display.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

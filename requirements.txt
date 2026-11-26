@@ -1,0 +1,2 @@
+# NAVAID-COLREGS requires no external pip packages.
+# It runs natively using Python 3.8+ standard libraries (http.server, json, math, time).
